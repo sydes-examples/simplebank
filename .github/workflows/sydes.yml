@@ -4,6 +4,13 @@ name: Sydes
 # CI. All implementation lives in the reusable workflow — see
 # https://github.com/sydes-examples/.github for the workflow, renderer, and
 # the frozen v1 presentation contract this repo relies on.
+#
+# CALIBRATION PIN: sydes_ref is temporarily pinned to an exact commit on the
+# calibration/go-structural-support branch of sydes-ai/sydes (unmerged),
+# to validate the GO-S-01 route-derived-entrypoint and affected-flow fixes
+# against this fork's real PR before they land on Sydes main. Remove this
+# pin (falling back to the reusable workflow's own "main" default) once
+# that evaluation is complete.
 
 on:
   pull_request:
@@ -18,5 +25,6 @@ jobs:
     uses: sydes-examples/.github/.github/workflows/sydes-verify.yml@main
     with:
       repo_alias: app
+      sydes_ref: be3f3ed3d552031fa4e865f07140d6d9928884d5
     secrets:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
