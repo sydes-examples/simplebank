@@ -41,6 +41,10 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 		return
 	}
 
+	if !server.checkSufficientBalance(ctx, fromAccount, req.Amount) {
+		return
+	}
+
 	arg := db.TransferTxParams{
 		FromAccountID: req.FromAccountID,
 		ToAccountID:   req.ToAccountID,
@@ -75,4 +79,14 @@ func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency s
 	}
 
 	return account, true
+}
+
+func (server *Server) checkSufficientBalance(ctx *gin.Context, account db.Account, amount int64) bool {
+	if account.Balance < amount {
+		err := fmt.Errorf("account [%d] has insufficient balance: %d < %d", account.ID, account.Balance, amount)
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return false
+	}
+
+	return true
 }
