@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/rs/zerolog/log"
 	db "github.com/techschool/simplebank/db/sqlc"
 	"github.com/techschool/simplebank/pb"
 	"github.com/techschool/simplebank/util"
@@ -53,6 +54,15 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		}
 		return nil, status.Errorf(codes.Internal, "failed to create user: %s", err)
+	}
+
+	// The user was created successfully even if AfterCreate (enqueuing the
+	// verify-email task) failed -- CreateUserTx does not roll back the
+	// user creation on an AfterCreate error. Surface that failure as a
+	// logged warning rather than failing the whole request.
+	if txResult.AfterCreateErr != nil {
+		log.Warn().Err(txResult.AfterCreateErr).Str("username", txResult.User.Username).
+			Msg("user created but failed to distribute send verify email task")
 	}
 
 	rsp := &pb.CreateUserResponse{

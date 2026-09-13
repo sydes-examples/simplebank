@@ -3,6 +3,7 @@ package gapi
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -163,6 +164,52 @@ func TestCreateUserAPI(t *testing.T) {
 				st, ok := status.FromError(err)
 				require.True(t, ok)
 				require.Equal(t, codes.AlreadyExists, st.Code())
+			},
+		},
+		{
+			name: "TaskDistributionFails",
+			req: &pb.CreateUserRequest{
+				Username: user.Username,
+				Password: password,
+				FullName: user.FullName,
+				Email:    user.Email,
+			},
+			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor) {
+				// Simulate the decoupled production behavior of
+				// CreateUserTx: the user row is committed regardless of
+				// whether AfterCreate (which enqueues the verify-email
+				// task) succeeds, with any AfterCreate error surfaced via
+				// CreateUserTxResult.AfterCreateErr instead of aborting
+				// the transaction.
+				store.EXPECT().
+					CreateUserTx(gomock.Any(), gomock.Any()).
+					Times(1).
+					DoAndReturn(func(_ context.Context, arg db.CreateUserTxParams) (db.CreateUserTxResult, error) {
+						afterCreateErr := arg.AfterCreate(user)
+						return db.CreateUserTxResult{
+							User:           user,
+							AfterCreateErr: afterCreateErr,
+						}, nil
+					})
+
+				taskPayload := &worker.PayloadSendVerifyEmail{
+					Username: user.Username,
+				}
+				taskDistributor.EXPECT().
+					DistributeTaskSendVerifyEmail(gomock.Any(), taskPayload, gomock.Any()).
+					Times(1).
+					Return(errors.New("failed to distribute task to send verify email"))
+			},
+			checkResponse: func(t *testing.T, res *pb.CreateUserResponse, err error) {
+				// The key behavioral assertion: even though task
+				// distribution failed, the user is still created
+				// successfully and the request does not error out.
+				require.NoError(t, err)
+				require.NotNil(t, res)
+				createdUser := res.GetUser()
+				require.Equal(t, user.Username, createdUser.Username)
+				require.Equal(t, user.FullName, createdUser.FullName)
+				require.Equal(t, user.Email, createdUser.Email)
 			},
 		},
 		{
