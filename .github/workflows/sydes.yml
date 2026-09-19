@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   sydes:
-    uses: sydes-examples/sydes-action/.github/workflows/verify.yml@main
+    uses: sydes-examples/sydes-action/.github/workflows/verify.yml@v1
     with:
       repo_alias: app
       model: openai:gpt-5.6-sol
