@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   sydes:
-    uses: sydes-examples/.github/.github/workflows/sydes-verify.yml@main
+    uses: sydes-examples/sydes-action/.github/workflows/verify.yml@main
     with:
       repo_alias: app
       sydes_ref: 0.2.0b10
