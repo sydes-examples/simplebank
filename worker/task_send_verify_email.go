@@ -49,6 +49,12 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
+	if user.IsEmailVerified {
+		log.Info().Str("type", task.Type()).Bytes("payload", task.Payload()).
+			Str("email", user.Email).Msg("email already verified, skipping verify email task")
+		return nil
+	}
+
 	verifyEmail, err := processor.store.CreateVerifyEmail(ctx, db.CreateVerifyEmailParams{
 		Username:   user.Username,
 		Email:      user.Email,
