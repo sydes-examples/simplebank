@@ -24,7 +24,7 @@ jobs:
       model: openai:gpt-5.1
       recovery_route_context: true
       recovery_graph_path_search: true
-      sydes_git_ref: 1fff6db
+      sydes_git_ref: 244524e
       renderer_ref: runtime-evidence
       runner: macos-15
       runtime_evidence_args: "--runtime go --test-root gapi --tests ./gapi/ --mock-dir db/mock --mock-dir worker/mock"
