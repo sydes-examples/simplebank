@@ -1,0 +1,32 @@
+name: Sydes
+
+# Sydes runs as an independent PR check alongside the repository's existing
+# CI. All implementation lives in the reusable workflow -- see
+# https://github.com/sydes-examples/.github for the workflow, renderer, and
+# the frozen v1 presentation contract this repo relies on.
+
+on:
+  pull_request:
+    branches: [ "sydes-test-base-2" ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sydes:
+    # Validation of the runtime-evidence integration: Sydes from the integration
+    # branch commit (its uv.lock pins diffgenome 0.1.0 from PyPI), on macOS because
+    # DiffGenome 0.1.0 only runs target tests under sandbox-exec.
+    uses: sydes-examples/sydes-action/.github/workflows/verify.yml@runtime-evidence
+    with:
+      repo_alias: app
+      model: openai:gpt-5.1
+      recovery_route_context: true
+      recovery_graph_path_search: true
+      sydes_git_ref: 244524e
+      renderer_ref: runtime-evidence
+      runner: macos-15
+      runtime_evidence_args: "--runtime go --test-root gapi --tests ./gapi/ --mock-dir db/mock --mock-dir worker/mock"
+    secrets:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
